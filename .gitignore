@@ -1,8 +1,11 @@
 # dependencies
 /node_modules
 
-# build output
-/dist
+# build output — tracked on purpose: this hosting account's shared
+# Node environment can't run `vite build` (esbuild OOMs/crashes under
+# CloudLinux's resource caps), so the built dist/ is committed and the
+# server just `git pull`s the finished files. Rebuild + recommit locally
+# whenever src/ changes. See DEPLOYMENT.md.
 
 # env files (secrets — never commit these)
 .env*

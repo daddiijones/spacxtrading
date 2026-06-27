@@ -100,14 +100,22 @@ Admin login after seeding: `admin@spacxtrading.online` with the password set in 
 
 ## 8. Build
 
+**Don't run `npm run build` on this server — it will crash.** Confirmed: esbuild (Vite's transform engine) hits a hard OOM/resource-limit crash under this account's CloudLinux caps, dumping a full Go runtime panic. This is the same class of problem westernapex hit (`EAGAIN` on spawn), just a harder failure.
+
+The fix in place: `dist/` (the built frontend) is committed straight to the repo instead of being gitignored. Build locally, commit, push, then `git pull` on the server — no build step needed there at all:
+
 ```bash
+# on your own machine, after making changes to src/
 npm run build
+git add dist
+git commit -m "rebuild dist"
+git push
+
+# on the server
+git pull
 ```
 
-Two shared-hosting-specific failures to watch for (hit on westernapex, may or may not apply here since Vite's esbuild/Rollup pipeline is lighter than Next's webpack/SWC, but worth knowing the shape of the problem):
-
-- **`EAGAIN` on spawn.** Shared hosting (CloudLinux) caps how many OS processes your account can run at once. If `vite build` fails this way, build locally instead (`npm run build` on your own machine) and upload the resulting `dist/` folder via File Manager or `scp`/`rsync`, then skip this step on the server.
-- **Symlinked `node_modules` confusing a bundler.** cPanel's `nodevenv` makes your app's `node_modules` a symlink into the venv's own lib directory. We haven't hit this with Vite/Rollup, but if a build step complains about symlinks resolving outside the project root, that's the class of issue — same root cause as the Turbopack problem westernapex hit, different bundler.
+If `node_modules` itself ever needs touching (rare — only when `package.json` changes), `npm install` is fine on the server; it's specifically the Vite/esbuild build step that can't run there.
 
 ## 9. Restart and verify
 
