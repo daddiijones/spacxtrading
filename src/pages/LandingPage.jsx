@@ -516,6 +516,25 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Tawk.to live chat widget
+  useEffect(() => {
+    window.Tawk_API = window.Tawk_API || {}
+    window.Tawk_LoadStart = new Date()
+    const s1 = document.createElement('script')
+    s1.async = true
+    s1.src = 'https://embed.tawk.to/6a4018b443e9051d4585b076/1js5610l7'
+    s1.charset = 'UTF-8'
+    s1.setAttribute('crossorigin', '*')
+    document.body.appendChild(s1)
+
+    return () => {
+      window.Tawk_API?.hideWidget?.()
+      document.body.removeChild(s1)
+      delete window.Tawk_API
+      delete window.Tawk_LoadStart
+    }
+  }, [])
+
   useEffect(() => {
     miningApi.plans()
       .then(p => setPlansList(p.filter(x => x.isActive)))
