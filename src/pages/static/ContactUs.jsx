@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Mail, MessageCircle, MapPin, Clock } from 'lucide-react'
+import { ArrowLeft, Mail, MessageCircle, MapPin, Clock, Phone } from 'lucide-react'
 
 export default function ContactUs() {
   return (
@@ -14,17 +14,29 @@ export default function ContactUs() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 800 }}>
           {[
             { icon: Mail, title: 'Email Support', detail: 'admin@spacxtrading.online', sub: 'Response guaranteed within 24 hours' },
+            { icon: Phone, title: 'WhatsApp Support', detail: '+1 (210) 214-3149', sub: 'Main support line', href: 'https://wa.me/12102143149' },
+            { icon: Phone, title: 'Branch Office Customer Care', detail: '+62 851 8789 8810', sub: 'WhatsApp support line', href: 'https://wa.me/6285187898810' },
             { icon: MessageCircle, title: 'Live Chat Support', detail: 'Available inside Dashboard', sub: 'Mon-Sun, 24/7 Priority Support' },
             { icon: MapPin, title: 'Headquarters Operations', detail: 'Global Mission Control Centers', sub: 'Redundant systems active across 12 countries' },
             { icon: Clock, title: 'Mission Hours', detail: '24/7 Automated Investment Operations', sub: 'System telemetry active continuously' },
-          ].map((c, i) => (
-            <div key={i} style={{ background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 28, transition: 'all 0.3s ease' }} className="card">
-              <c.icon size={28} style={{ color: '#0ea5e9', marginBottom: 14 }} />
-              <h3 style={{ fontWeight: 700, marginBottom: 6, color: '#fff' }}>{c.title}</h3>
-              <p style={{ fontWeight: 600, color: 'var(--accent-cyan)', marginBottom: 4, wordBreak: 'break-all' }}>{c.detail}</p>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{c.sub}</p>
-            </div>
-          ))}
+          ].map((c, i) => {
+            const Tag = c.href ? 'a' : 'div'
+            return (
+              <Tag
+                key={i}
+                href={c.href}
+                target={c.href ? '_blank' : undefined}
+                rel={c.href ? 'noopener noreferrer' : undefined}
+                style={{ background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 28, transition: 'all 0.3s ease', textDecoration: 'none', display: 'block', cursor: c.href ? 'pointer' : 'default' }}
+                className="card"
+              >
+                <c.icon size={28} style={{ color: '#0ea5e9', marginBottom: 14 }} />
+                <h3 style={{ fontWeight: 700, marginBottom: 6, color: '#fff' }}>{c.title}</h3>
+                <p style={{ fontWeight: 600, color: 'var(--accent-cyan)', marginBottom: 4, wordBreak: 'break-all' }}>{c.detail}</p>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{c.sub}</p>
+              </Tag>
+            )
+          })}
         </div>
       </div>
     </div>
