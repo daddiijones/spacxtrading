@@ -169,7 +169,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Authorize Access", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Authentication" <auth@spacxtrading.online>',
+      from: `"SpaceX Trading Authentication" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `[OTP] Authorization Code: ${otpCode}`,
       html
@@ -186,7 +186,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Verify Your Account", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Registration" <auth@spacxtrading.online>',
+      from: `"SpaceX Trading Registration" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `[SpaceX Trading] Verify your email address (OTP: ${otpCode})`,
       html
@@ -203,7 +203,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Password Authorization Reset", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Security" <security@spacxtrading.online>',
+      from: `"SpaceX Trading Security" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `[OTP] Password Reset Authorization: ${otpCode}`,
       html
@@ -239,7 +239,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Deposit Initiated", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Billing" <billing@spacxtrading.online>',
+      from: `"SpaceX Trading Billing" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `🔄 Deposit Request Received ($${Number(depositDetails.amount).toFixed(2)})`,
       html
@@ -276,7 +276,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Deposit Approved", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Systems" <billing@spacxtrading.online>',
+      from: `"SpaceX Trading Systems" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `✅ Deposit Approved & Credited: +$${Number(depositDetails.amount).toFixed(2)}`,
       html
@@ -316,7 +316,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Admin: Deposit Approved", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Admin" <admin@spacxtrading.online>',
+      from: `"SpaceX Trading Admin" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: adminEmail,
       subject: `🛡 [ADMIN ALERT] Deposit Confirmed for ${userEmail}: $${Number(depositDetails.amount).toFixed(2)}`,
       html
@@ -352,7 +352,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Withdrawal Initiated", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Vault" <vault@spacxtrading.online>',
+      from: `"SpaceX Trading Vault" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `📤 Withdrawal Dispatched ($${Number(withdrawDetails.amount).toFixed(2)})`,
       html
@@ -393,7 +393,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Mission Launch Confirmed", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading" <missions@spacxtrading.online>',
+      from: `"SpaceX Trading" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `🚀 Investment Contract Launched: ${miningDetails.plan?.name}`,
       html
@@ -430,7 +430,7 @@ export const emailService = {
     `
     const html = getHtmlLayout("Mission Completed Successfully", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading" <missions@spacxtrading.online>',
+      from: `"SpaceX Trading" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `🏁 Mission Completed & Yield Paid Out: ${miningDetails.plan?.name}`,
       html
@@ -455,7 +455,7 @@ export const emailService = {
     `
     const html = getHtmlLayout('Live Chat — Missed Message', content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Monitoring" <missions@spacxtrading.online>',
+      from: `"SpaceX Trading Monitoring" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: adminEmail,
       subject: `💬 Missed Live Chat from ${guestName} (${guestEmail})`,
       html
@@ -489,7 +489,7 @@ export const emailService = {
     `
     const html = getHtmlLayout('Stock Investment Activated', content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Markets" <markets@spacxtrading.online>',
+      from: `"SpaceX Trading Markets" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: `📈 Stock Investment Activated — ${details.symbol} · $${Number(investedAmount).toFixed(2)}`,
       html
@@ -518,7 +518,7 @@ export const emailService = {
     `
     const html = getHtmlLayout('Admin: New Stock Investment', content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Admin" <admin@spacxtrading.online>',
+      from: `"SpaceX Trading Admin" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: adminEmail,
       subject: `📊 [ADMIN] New Stock Purchase — ${details.symbol} · ${fmtUSD(investedAmount)} by ${userEmail}`,
       html
@@ -534,7 +534,7 @@ export const emailService = {
     `
     const html = getHtmlLayout(subject || "Administration Message", content)
     await transporter.sendMail({
-      from: '"SpaceX Trading Administration" <admin@spacxtrading.online>',
+      from: `"SpaceX Trading Administration" <${process.env.EMAIL_FROM || 'support@spacxtrading.online'}>`,
       to: toEmail,
       subject: subject || "Administration Notice",
       html
