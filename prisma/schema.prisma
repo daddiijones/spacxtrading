@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum DepositStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum MiningStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum StockInvestmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id              String       @id @default(uuid())
+  email           String       @unique
+  password        String
+  fullName        String
+  role            Role         @default(USER)
+  balance         Float        @default(0)
+  balanceBTC      Float        @default(0)
+  balanceETH      Float        @default(0)
+  balanceUSDT     Float        @default(0)
+  balanceLTC      Float        @default(0)
+  balanceBNB      Float        @default(0)
+  balanceSOL      Float        @default(0)
+  referralCode    String       @unique @default(uuid())
+  referredBy      String?
+  totalEarned     Float        @default(0)
+  totalDeposited  Float        @default(0)
+  totalWithdrawn  Float        @default(0)
+  isActive        Boolean      @default(true)
+  country         String?
+  currency        String?
+  timezone        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  deposits         Deposit[]
+  withdrawals      Withdrawal[]
+  userMinings      UserMining[]
+  referrals        Referral[]   @relation("Referrer")
+  referredByRef    Referral?    @relation("Referred")
+  notifications    Notification[]
+  savedWallets     SavedWallet[]
+  chatSessions     ChatSession[]
+  stockInvestments StockInvestment[]
+
+  @@map("users")
+}
+
+model MiningPlan {
+  id            String       @id @default(uuid())
+  name          String
+  description   String?
+  hashRate      String
+  dailyROI      Float
+  totalROI      Float
+  durationDays  Int
+  minDeposit    Float
+  maxDeposit    Float
+  cryptoType    String
+  isActive      Boolean      @default(true)
+  tier          String       @default("starter")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  userMinings   UserMining[]
+
+  @@map("mining_plans")
+}
+
+model UserMining {
+  id              String       @id @default(uuid())
+  userId          String
+  planId          String
+  investedAmount  Float
+  cryptoType      String
+  dailyEarning    Float
+  totalEarned     Float        @default(0)
+  lastAccrualAt   DateTime     @default(now())
+  status          MiningStatus @default(ACTIVE)
+  startDate       DateTime     @default(now())
+  endDate         DateTime
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user            User         @relation(fields: [userId], references: [id])
+  plan            MiningPlan   @relation(fields: [planId], references: [id])
+
+  @@map("user_minings")
+}
+
+model Deposit {
+  id              String        @id @default(uuid())
+  userId          String
+  amount          Float
+  cryptoType      String
+  walletAddress   String?
+  txHash          String?
+  status          DepositStatus @default(PENDING)
+  adminNote       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id])
+
+  @@map("deposits")
+}
+
+model Withdrawal {
+  id              String           @id @default(uuid())
+  userId          String
+  amount          Float
+  cryptoType      String
+  walletAddress   String
+  status          WithdrawalStatus @default(PENDING)
+  adminNote       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id])
+
+  @@map("withdrawals")
+}
+
+model Referral {
+  id              String   @id @default(uuid())
+  referrerId      String
+  referredId      String   @unique
+  bonusEarned     Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  referrer        User     @relation("Referrer", fields: [referrerId], references: [id])
+  referred        User     @relation("Referred", fields: [referredId], references: [id])
+
+  @@map("referrals")
+}
+
+model AdminSetting {
+  id              String   @id @default(uuid())
+  key             String   @unique
+  value           String
+  description     String?
+  updatedAt       DateTime @updatedAt
+
+  @@map("admin_settings")
+}
+
+model SavedWallet {
+  id             String   @id @default(uuid())
+  userId         String
+  label          String
+  cryptoType     String
+  network        String
+  walletAddress  String
+  connectionType String
+  encryptedData  String?
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_wallets")
+}
+
+model Notification {
+  id              String   @id @default(uuid())
+  userId          String
+  title           String
+  message         String
+  type            String   @default("SYSTEM") // SYSTEM, DEPOSIT, WITHDRAWAL, MINING
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Stock {
+  id            String   @id @default(uuid())
+  symbol        String   @unique
+  name          String
+  description   String?
+  sector        String?
+  isPrivate     Boolean  @default(false)
+  fixedPrice    Float?
+  annualROI     Float    @default(10)
+  minInvestment Float    @default(100)
+  maxInvestment Float    @default(1000000)
+  contractDays  Int      @default(365)
+  lastKnownPrice Float?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  investments   StockInvestment[]
+
+  @@map("stocks")
+}
+
+model StockInvestment {
+  id              String                @id @default(uuid())
+  userId          String
+  stockId         String
+  symbol          String
+  stockName       String
+  investedAmount  Float
+  priceAtPurchase Float
+  sharesOwned     Float
+  annualROI       Float
+  dailyEarning    Float
+  totalEarned     Float                 @default(0)
+  contractStart   DateTime             @default(now())
+  contractEnd     DateTime
+  lastAccrualAt   DateTime             @default(now())
+  status          StockInvestmentStatus @default(ACTIVE)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  stock Stock @relation(fields: [stockId], references: [id])
+
+  @@map("stock_investments")
+}
+
+model ChatSession {
+  id          String        @id @default(uuid())
+  guestEmail  String
+  guestName   String
+  guestIp     String?
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status      String        @default("OPEN")
+  messages    ChatMessage[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id             String        @id @default(uuid())
+  sessionId      String
+  session        ChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender         String
+  message        String        @default("")
+  files          Json?
+  replyToId      String?
+  replyToSnippet String?
+  replyToSender  String?
+  createdAt      DateTime      @default(now())
+
+  @@map("chat_messages")
+}
