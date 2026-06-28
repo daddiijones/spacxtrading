@@ -51,54 +51,48 @@ const STOCKS = [
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // Shared hosting under CPU throttling can starve the Prisma query engine's
-// async runtime and trigger a "timer has gone away" Rust panic on an
-// otherwise-fine query. upsert is idempotent, so retrying is safe.
-async function upsertWithRetry(s, attempt = 1) {
-  try {
-    await prisma.stock.upsert({
-      where: { symbol: s.symbol },
-      update: {
-        name: s.name,
-        description: s.description,
-        sector: s.sector,
-        isPrivate: s.isPrivate || false,
-        fixedPrice: s.fixedPrice || null,
-        lastKnownPrice: s.lastKnownPrice || null,
-        annualROI: s.annualROI,
-        minInvestment: s.minInvestment,
-        maxInvestment: s.maxInvestment,
-        contractDays: s.contractDays,
-        isActive: true
-      },
-      create: {
-        ...s,
-        isPrivate: s.isPrivate || false,
-        fixedPrice: s.fixedPrice || null
-      }
-    })
-    return true
-  } catch (e) {
-    if (attempt < 3) {
-      console.warn(`  ⚠️  ${s.symbol} failed (attempt ${attempt}), retrying...`)
-      await sleep(500 * attempt)
-      return upsertWithRetry(s, attempt + 1)
-    }
-    console.error(`  ❌ ${s.symbol} failed after ${attempt} attempts:`, e.message)
-    return false
-  }
-}
-
+// async runtime and trigger a "timer has gone away" Rust panic. Prisma's own
+// error for this says the engine is non-recoverable — once one query panics,
+// every later query on this same process panics too, so retrying in-process
+// is pointless. Instead: stop at the first failure and exit non-zero, so an
+// outer loop can relaunch a fresh `node` process (fresh engine). upsert is
+// idempotent, so already-seeded symbols are cheap no-ops on the next pass.
 async function seedStocks() {
   console.log('🌱 Seeding stock catalog...')
   let succeeded = 0
   for (const s of STOCKS) {
-    if (await upsertWithRetry(s)) succeeded++
-    await sleep(100) // ease load on the constrained query engine between calls
+    try {
+      await prisma.stock.upsert({
+        where: { symbol: s.symbol },
+        update: {
+          name: s.name,
+          description: s.description,
+          sector: s.sector,
+          isPrivate: s.isPrivate || false,
+          fixedPrice: s.fixedPrice || null,
+          lastKnownPrice: s.lastKnownPrice || null,
+          annualROI: s.annualROI,
+          minInvestment: s.minInvestment,
+          maxInvestment: s.maxInvestment,
+          contractDays: s.contractDays,
+          isActive: true
+        },
+        create: {
+          ...s,
+          isPrivate: s.isPrivate || false,
+          fixedPrice: s.fixedPrice || null
+        }
+      })
+      succeeded++
+    } catch (e) {
+      console.error(`❌ ${s.symbol} failed — stopping here (engine is unrecoverable after a panic):`, e.message?.split('\n')[0])
+      console.log(`${succeeded}/${STOCKS.length} done so far. Re-run "npm run seed:stocks" — it'll skip these and continue.`)
+      process.exit(1)
+    }
+    await sleep(250) // ease load on the constrained query engine between calls
   }
   console.log(`✅ ${succeeded}/${STOCKS.length} stocks seeded successfully!`)
-  if (succeeded < STOCKS.length) {
-    console.log('Re-run "npm run seed:stocks" to retry the ones that failed — upsert is safe to repeat.')
-  }
+  process.exit(0)
 }
 
 seedStocks()
