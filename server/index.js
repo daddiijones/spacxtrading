@@ -5,6 +5,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { PrismaClient } from '@prisma/client'
+import { withPanicGuard } from './services/prismaPanicGuard.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 import authRoutes from './routes/auth.js'
@@ -25,7 +26,7 @@ dotenv.config()
 
 const app = express()
 const httpServer = createServer(app)
-const prisma = new PrismaClient()
+const prisma = withPanicGuard(new PrismaClient())
 const PORT = process.env.PORT || 5000
 
 app.use(cors())
@@ -67,17 +68,29 @@ setupChatSocket(httpServer, prisma)
 // Mining accrual cron - runs every 10 minutes
 cron.schedule('*/10 * * * *', async () => {
   console.log('[CRON] Accruing mining earnings...')
-  await accrueAllMinings(prisma)
+  try {
+    await accrueAllMinings(prisma)
+  } catch (err) {
+    console.error('[CRON] Mining accrual failed:', err.message)
+  }
 })
 
 // Stock accrual cron - runs every hour
 cron.schedule('0 * * * *', async () => {
   console.log('[CRON] Accruing stock earnings...')
-  await accrueAllStocks(prisma)
+  try {
+    await accrueAllStocks(prisma)
+  } catch (err) {
+    console.error('[CRON] Stock accrual failed:', err.message)
+  }
 })
 
 // Initial accrual on startup
-accrueAllMinings(prisma).then(() => console.log('[STARTUP] Mining accrual complete'))
-accrueAllStocks(prisma).then(() => console.log('[STARTUP] Stock accrual complete'))
+accrueAllMinings(prisma)
+  .then(() => console.log('[STARTUP] Mining accrual complete'))
+  .catch(err => console.error('[STARTUP] Mining accrual failed:', err.message))
+accrueAllStocks(prisma)
+  .then(() => console.log('[STARTUP] Stock accrual complete'))
+  .catch(err => console.error('[STARTUP] Stock accrual failed:', err.message))
 
 httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`))
