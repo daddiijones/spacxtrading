@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny-ps" viewBox="0 0 200 200">
+  <title>SpaceX Trading</title>
+  <rect x="0" y="0" width="200" height="200" fill="#07090e"/>
+  <polygon points="100,30 77.6,77.6 122.4,77.6" fill="#0ea5e9"/>
+  <rect x="77.6" y="77.6" width="44.8" height="44.8" fill="#0ea5e9"/>
+  <polygon points="77.6,122.4 122.4,122.4 142,147.6 58,147.6" fill="#0ea5e9"/>
+  <polygon points="58,147.6 142,147.6 100,163" fill="#ffffff"/>
+  <circle cx="100" cy="94.4" r="8.4" fill="#ffffff"/>
+</svg>
