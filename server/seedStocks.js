@@ -48,9 +48,13 @@ const STOCKS = [
   },
 ]
 
-async function seedStocks() {
-  console.log('🌱 Seeding stock catalog...')
-  for (const s of STOCKS) {
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+// Shared hosting under CPU throttling can starve the Prisma query engine's
+// async runtime and trigger a "timer has gone away" Rust panic on an
+// otherwise-fine query. upsert is idempotent, so retrying is safe.
+async function upsertWithRetry(s, attempt = 1) {
+  try {
     await prisma.stock.upsert({
       where: { symbol: s.symbol },
       update: {
@@ -72,8 +76,29 @@ async function seedStocks() {
         fixedPrice: s.fixedPrice || null
       }
     })
+    return true
+  } catch (e) {
+    if (attempt < 3) {
+      console.warn(`  ⚠️  ${s.symbol} failed (attempt ${attempt}), retrying...`)
+      await sleep(500 * attempt)
+      return upsertWithRetry(s, attempt + 1)
+    }
+    console.error(`  ❌ ${s.symbol} failed after ${attempt} attempts:`, e.message)
+    return false
   }
-  console.log(`✅ ${STOCKS.length} stocks seeded successfully!`)
+}
+
+async function seedStocks() {
+  console.log('🌱 Seeding stock catalog...')
+  let succeeded = 0
+  for (const s of STOCKS) {
+    if (await upsertWithRetry(s)) succeeded++
+    await sleep(100) // ease load on the constrained query engine between calls
+  }
+  console.log(`✅ ${succeeded}/${STOCKS.length} stocks seeded successfully!`)
+  if (succeeded < STOCKS.length) {
+    console.log('Re-run "npm run seed:stocks" to retry the ones that failed — upsert is safe to repeat.')
+  }
 }
 
 seedStocks()
