@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "server": "node server/index.js",
     "seed": "node server/seed.js",
+    "seed:stocks": "node server/seedStocks.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run server\""
   },
   "dependencies": {

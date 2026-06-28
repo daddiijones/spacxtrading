@@ -94,9 +94,12 @@ npm install
 npx prisma generate
 npx prisma db push      # creates tables in the MySQL database
 npm run seed             # admin account + the 6 SpaceX-fleet investment plans
+npm run seed:stocks      # the 31-stock catalog (separate script — easy to forget, it's not chained into `seed`)
 ```
 
 Admin login after seeding: `admin@spacxtrading.online` with the password set in `server/seed.js` — log in once, then change it from the admin settings page immediately (don't leave the seeded default in place on a live site).
+
+**Do not re-run `npm run seed` once the site has real users/data.** It purges deposits, withdrawals, notifications, and mining records before recreating the plans — fine on a fresh database, destructive on a live one. `npm run seed:stocks` is safe to re-run (it `upsert`s by symbol).
 
 ## 8. Build
 
