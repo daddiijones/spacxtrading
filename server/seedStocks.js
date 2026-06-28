@@ -1,6 +1,8 @@
-import { PrismaClient } from '@prisma/client'
+import mysql from 'mysql2/promise'
+import { randomUUID } from 'crypto'
+import dotenv from 'dotenv'
 
-const prisma = new PrismaClient()
+dotenv.config()
 
 const STOCKS = [
   { symbol: 'AAPL',   name: 'Apple Inc.',                              description: 'Consumer electronics, software, and services giant behind iPhone, Mac, and iOS.',         sector: 'Technology',     annualROI: 9.5,  minInvestment: 100, maxInvestment: 500000, contractDays: 365, lastKnownPrice: 298.12 },
@@ -48,53 +50,35 @@ const STOCKS = [
   },
 ]
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-// Shared hosting under CPU throttling can starve the Prisma query engine's
-// async runtime and trigger a "timer has gone away" Rust panic. Prisma's own
-// error for this says the engine is non-recoverable — once one query panics,
-// every later query on this same process panics too, so retrying in-process
-// is pointless. Instead: stop at the first failure and exit non-zero, so an
-// outer loop can relaunch a fresh `node` process (fresh engine). upsert is
-// idempotent, so already-seeded symbols are cheap no-ops on the next pass.
+// Bypasses Prisma entirely for this script. The Prisma Rust query engine
+// hard-panics ("timer has gone away") under this host's CPU throttling and
+// the panic is non-recoverable for the rest of the process — confirmed live,
+// every query after the first panic fails identically. mysql2 is pure JS,
+// no native async runtime to starve, so it doesn't hit this failure class.
 async function seedStocks() {
+  const conn = await mysql.createConnection(process.env.DATABASE_URL)
   console.log('🌱 Seeding stock catalog...')
   let succeeded = 0
   for (const s of STOCKS) {
-    try {
-      await prisma.stock.upsert({
-        where: { symbol: s.symbol },
-        update: {
-          name: s.name,
-          description: s.description,
-          sector: s.sector,
-          isPrivate: s.isPrivate || false,
-          fixedPrice: s.fixedPrice || null,
-          lastKnownPrice: s.lastKnownPrice || null,
-          annualROI: s.annualROI,
-          minInvestment: s.minInvestment,
-          maxInvestment: s.maxInvestment,
-          contractDays: s.contractDays,
-          isActive: true
-        },
-        create: {
-          ...s,
-          isPrivate: s.isPrivate || false,
-          fixedPrice: s.fixedPrice || null
-        }
-      })
-      succeeded++
-    } catch (e) {
-      console.error(`❌ ${s.symbol} failed — stopping here (engine is unrecoverable after a panic):`, e.message?.split('\n')[0])
-      console.log(`${succeeded}/${STOCKS.length} done so far. Re-run "npm run seed:stocks" — it'll skip these and continue.`)
-      process.exit(1)
-    }
-    await sleep(250) // ease load on the constrained query engine between calls
+    await conn.execute(
+      `INSERT INTO stocks
+        (id, symbol, name, description, sector, isPrivate, fixedPrice, lastKnownPrice, annualROI, minInvestment, maxInvestment, contractDays, isActive, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(3), NOW(3))
+       ON DUPLICATE KEY UPDATE
+         name=VALUES(name), description=VALUES(description), sector=VALUES(sector), isPrivate=VALUES(isPrivate),
+         fixedPrice=VALUES(fixedPrice), lastKnownPrice=VALUES(lastKnownPrice), annualROI=VALUES(annualROI),
+         minInvestment=VALUES(minInvestment), maxInvestment=VALUES(maxInvestment), contractDays=VALUES(contractDays),
+         isActive=1, updatedAt=NOW(3)`,
+      [
+        randomUUID(), s.symbol, s.name, s.description || null, s.sector || null,
+        s.isPrivate ? 1 : 0, s.fixedPrice ?? null, s.lastKnownPrice ?? null,
+        s.annualROI, s.minInvestment, s.maxInvestment, s.contractDays
+      ]
+    )
+    succeeded++
   }
   console.log(`✅ ${succeeded}/${STOCKS.length} stocks seeded successfully!`)
-  process.exit(0)
+  await conn.end()
 }
 
-seedStocks()
-  .catch(e => { console.error(e); process.exit(1) })
-  .finally(() => prisma.$disconnect())
+seedStocks().catch(e => { console.error(e); process.exit(1) })
